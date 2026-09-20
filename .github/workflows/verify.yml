@@ -1,0 +1,39 @@
+name: verify
+
+# The profile README quotes versions, counters and links that live in eight
+# other repositories. Nothing in this repo changes when they do, so the drift
+# is silent by construction — this job is what makes it loud.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Mondays 06:00 UTC — catches a repo that was renamed, a package that was
+    # unpublished, or a domain whose certificate expired, without a push.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # No install step: the script has no dependencies, like the engines it
+      # advertises. If this ever needs an `npm ci`, something has gone wrong.
+      - name: verify README claims, links, badges and banners
+        run: node scripts/verify-readme.mjs

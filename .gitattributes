@@ -1,0 +1,14 @@
+# Normalise everything to LF in the repository, whatever the checkout OS does.
+# Without this, editing on Windows rewrites the whole README and both SVGs as
+# CRLF and every diff becomes unreadable.
+* text=auto eol=lf
+
+*.md   text eol=lf
+*.svg  text eol=lf
+*.yml  text eol=lf
+*.mjs  text eol=lf
+*.json text eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
