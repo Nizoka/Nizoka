@@ -21,6 +21,13 @@ const ASSETS = join(ROOT, 'assets');
 /** Repos that must NOT be linked until they actually exist on GitHub. */
 const UNPUBLISHED = ['Nizoka/pkinative', 'Nizoka/pkinative-cli', 'Nizoka/pkinative-mcp'];
 
+/**
+ * Domains named in the footer as "soon". Registered and parked is not shipped:
+ * they stay unlinked until they serve the site over HTTPS. This check never
+ * fails the build — it only says when one becomes linkable.
+ */
+const PENDING_DOMAINS = ['https://pkinative.dev'];
+
 const results = [];
 const pass = (name, detail = '') => results.push({ ok: true, name, detail });
 const fail = (name, detail) => results.push({ ok: false, name, detail });
@@ -83,6 +90,18 @@ const readme = await readFile(README, 'utf8');
     if (linked && !live) fail(`${repo} not linked while absent`, 'README links a repo that 404s');
     else if (!linked && live) pass(`${repo} now exists`, 'it may be linked — update the README');
     else pass(`${repo} link state consistent`, linked ? 'linked and live' : 'absent and unlinked');
+  }
+}
+
+// 2b. Domains marked "soon" must stay unlinked until HTTPS actually serves.
+{
+  for (const url of PENDING_DOMAINS) {
+    const host = new URL(url).host;
+    const linked = readme.includes(`](${url}`) || readme.includes(`href="${url}`);
+    const live = (await probe(url, { attempts: 1 })).ok;
+    if (linked && !live) fail(`${host} linked but not serving`, 'remove the link or ship the site');
+    else if (!linked && live) pass(`${host} is live`, 'HTTPS answers — it can be linked now');
+    else pass(`${host} pending`, linked ? 'linked and live' : 'parked, correctly unlinked');
   }
 }
 

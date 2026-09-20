@@ -1,7 +1,9 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/banner-dark.svg">
-  <img alt="the native family — pdfnative (ISO 32000-1), zipnative (ISO/IEC 21320-1), pkinative (RFC 5280)" src="assets/banner-light.svg">
-</picture>
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/banner-dark.svg">
+    <img alt="the native family — pdfnative (ISO 32000-1), zipnative (ISO/IEC 21320-1), pkinative (RFC 5280)" src="assets/banner-light.svg">
+  </picture>
+</div>
 
 # Nizoka
 
@@ -112,4 +114,4 @@ Of the TypeScript PKI libraries measured on 2026-09-19, only pkinative and micro
 
 ---
 
-<sub>MIT · <a href="https://pdfnative.dev">pdfnative.dev</a> · <a href="https://zipnative.dev">zipnative.dev</a></sub>
+<sub>MIT · [pdfnative.dev](https://pdfnative.dev) · [zipnative.dev](https://zipnative.dev) · pkinative.dev *(soon)* · [Sponsor on GitHub](https://github.com/sponsors/Nizoka)</sub>
