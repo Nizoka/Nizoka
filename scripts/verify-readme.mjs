@@ -18,15 +18,19 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const README = join(ROOT, 'README.md');
 const ASSETS = join(ROOT, 'assets');
 
-/** Repos that must NOT be linked until they actually exist on GitHub. */
-const UNPUBLISHED = ['Nizoka/pkinative', 'Nizoka/pkinative-cli', 'Nizoka/pkinative-mcp'];
+/**
+ * Repos that must NOT be linked until they actually exist on GitHub. Existing
+ * is the floor, not the bar: an empty repo created to reserve the name is
+ * still not linked until it ships something.
+ */
+const UNPUBLISHED = ['Nizoka/pkinative-cli', 'Nizoka/pkinative-mcp'];
 
 /**
  * Domains named in the footer as "soon". Registered and parked is not shipped:
  * they stay unlinked until they serve the site over HTTPS. This check never
  * fails the build — it only says when one becomes linkable.
  */
-const PENDING_DOMAINS = ['https://pkinative.dev'];
+const PENDING_DOMAINS = [];
 
 const results = [];
 const pass = (name, detail = '') => results.push({ ok: true, name, detail });

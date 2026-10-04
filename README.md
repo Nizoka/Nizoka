@@ -43,7 +43,7 @@ The engine is the library; the CLI is the trust boundary the engine refuses to b
 | **[zipnative](https://github.com/Nizoka/zipnative)** | [![npm](https://img.shields.io/npm/v/zipnative?style=flat-square&color=1D4ED8&label=)](https://www.npmjs.com/package/zipnative) | **0 deps.** ZIP engine — own DEFLATE/INFLATE, Zip64, random access without extracting, incremental edits without recompression |
 | [zipnative-cli](https://github.com/Nizoka/zipnative-cli) | [![npm](https://img.shields.io/npm/v/zipnative-cli?style=flat-square&color=1D4ED8&label=)](https://www.npmjs.com/package/zipnative-cli) | 15 commands — zip-slip, symlink, bomb and duplicate guards on by default |
 | [zipnative-mcp](https://github.com/Nizoka/zipnative-mcp) | [![npm](https://img.shields.io/npm/v/zipnative-mcp?style=flat-square&color=1D4ED8&label=)](https://www.npmjs.com/package/zipnative-mcp) | 13 MCP tools, sandboxed to one directory, verified by realpath |
-| **pkinative** | `0.1` | **0 deps.** X.509 / ASN.1 DER engine — [see below](#now-building) |
+| **[pkinative](https://github.com/Nizoka/pkinative)** | [![npm](https://img.shields.io/npm/v/pkinative?style=flat-square&color=1D4ED8&label=)](https://www.npmjs.com/package/pkinative) | **0 deps.** PKI engine — X.509 and ASN.1 DER, RFC 5280 paths with CRL/OCSP, CMS and RFC 3161 timestamps, PKCS#8/#12; every signature through Web Crypto |
 
 Engines carry zero runtime dependencies; satellites carry zero *extra* ones. For scale, measured 2026-07-28: pdfkit ships 6 runtime dependencies, pdf-lib 4, jsPDF 3, pdfmake 3.
 
@@ -99,19 +99,23 @@ Every line below is a CI job against an outside corpus — not a badge someone d
 
 - **veraPDF** — PDF/A conformance across the pdfnative repos, including negative canaries the validator is required to *reject*. Blocking in three of them; still advisory in `pdfnative-mcp`.
 - **ISO/IEC 21320-1** — clause by clause, fail-closed, on Linux and Windows. No external ZIP validator exists — JHOVE has no ZIP module — so this one is the project's own; the corpus and its negative canaries are what make it a test rather than a claim.
-- **x509-limbo + Wycheproof** — 30 361 certificates and 1 530 ECDSA vectors, pinned by commit and SHA-256, differentially cross-checked against OpenSSL. Every refusal is justified in a reviewed baseline.
-- **npm Trusted Publishing (OIDC) + SLSA provenance** — on all seven published packages. No long-lived token exists anywhere.
+- **x509-limbo, Wycheproof + NIST PKITS** — 30 361 certificates, 1 530 ECDSA vectors, the 405 PKITS certificates and 224 signed S/MIME messages, pinned by commit and SHA-256, differentially cross-checked against OpenSSL. The 565 refusals sit in a reviewed baseline, frozen with their codes for the whole 1.x line.
+- **npm Trusted Publishing (OIDC) + SLSA provenance** — on all eight published packages. No long-lived token exists anywhere.
 
 Each engine keeps an `ecosystem.json` as the single source of truth for every number its own docs quote, and a `verify:docs` step breaks the build when the prose disagrees. The satellite repos do not have that gate yet.
 
-## Now building
+## Latest release
 
-**pkinative** — a zero-dependency X.509 and ASN.1 DER engine, extracted from pdfnative's signature stack and destined to return to it.
+**[pkinative 1.0](https://github.com/Nizoka/pkinative/releases/tag/v1.0.0)** shipped on 2026-10-04 — a zero-dependency PKI engine, extracted from pdfnative's signature stack and destined to return to it.
 
-Stated plainly: 0.1, pre-1.0, and **deliberately unreleased** — the name is reserved on npm, but the publish workflow fails on purpose below 1.0.0. Today it reads certificates, strictly: DER by default, BER only on request, every standard RFC 5280 extension, with the conformance gate above already in place. It does **not** verify signatures or validate chains yet — those are the next two milestones. And secret-dependent cryptography will never be written in TypeScript here: Web Crypto only.
+It reads certificates strictly — DER by default, BER only on request — and verifies them the whole way: signatures, RFC 5280 §6 paths, CRL and OCSP revocation, host names and key purposes. It reads, builds and verifies CMS SignedData and RFC 3161 timestamps, opens PKCS#8 and PKCS#12 into non-extractable Web Crypto keys, and creates certificates and certification requests. Secret-dependent cryptography is never written in TypeScript here: Web Crypto does every signature.
+
+The 1.x promise has three legs — the export surface, the error codes, and the *decision surface*: which certificate is refused, with which code. Each is a frozen snapshot that a build rule holds, not a sentence. Stated plainly: there is no external security audit at 1.0; what stands in its place is listed in its `SECURITY.md`.
+
+Next: `pkinative-cli` and `pkinative-mcp`, as separate repos pinning `pkinative ^1.0.0` — the order both elders followed — and then pdfnative's own signature stack moving onto pkinative.
 
 Of the TypeScript PKI libraries measured on 2026-09-19, only pkinative and micro509 ship zero dependencies — asn1js 3, pkijs 6, `@peculiar/x509` 11.
 
 ---
 
-<sub>MIT · [pdfnative.dev](https://pdfnative.dev) · [zipnative.dev](https://zipnative.dev) · pkinative.dev *(soon)* · [Sponsor on GitHub](https://github.com/sponsors/Nizoka)</sub>
+<sub>MIT · [pdfnative.dev](https://pdfnative.dev) · [zipnative.dev](https://zipnative.dev) · [pkinative.dev](https://pkinative.dev) · [Sponsor on GitHub](https://github.com/sponsors/Nizoka)</sub>
