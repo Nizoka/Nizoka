@@ -1,6 +1,6 @@
 name: verify
 
-# The profile README quotes versions, counters and links that live in eight
+# The profile README quotes versions, counters and links that live in nine
 # other repositories. Nothing in this repo changes when they do, so the drift
 # is silent by construction — this job is what makes it loud.
 

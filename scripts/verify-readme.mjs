@@ -23,7 +23,22 @@ const ASSETS = join(ROOT, 'assets');
  * is the floor, not the bar: an empty repo created to reserve the name is
  * still not linked until it ships something.
  */
-const UNPUBLISHED = ['Nizoka/pkinative-cli', 'Nizoka/pkinative-mcp'];
+const UNPUBLISHED = ['Nizoka/pkinative-mcp'];
+
+/**
+ * The runtime dependencies each satellite may declare. The page says the CLIs
+ * add nothing beyond their engine, the MCP servers only the SDK and zod, and
+ * pdfnative-react only its reconciler; this is that sentence, as data.
+ */
+const MCP = ['@modelcontextprotocol/server', 'zod'];
+const ALLOWED_DEPS = {
+  'pdfnative-cli': ['pdfnative'],
+  'pdfnative-mcp': ['pdfnative', ...MCP],
+  'pdfnative-react': ['react-reconciler'],
+  'zipnative-cli': ['zipnative'],
+  'zipnative-mcp': ['zipnative', ...MCP],
+  'pkinative-cli': ['pkinative'],
+};
 
 /**
  * Domains named in the footer as "soon". Registered and parked is not shipped:
@@ -56,6 +71,26 @@ async function probe(url, { attempts = 3 } = {}) {
     if (i < attempts - 1) await new Promise((r) => setTimeout(r, 1500 * (i + 1)));
   }
   return last;
+}
+
+/** A registry manifest, or null — read once per package across the checks. */
+const manifests = new Map();
+async function latest(pkg) {
+  if (!manifests.has(pkg)) {
+    let body = null;
+    for (let i = 0; i < 3 && !body; i++) {
+      try {
+        const res = await fetch(`https://registry.npmjs.org/${pkg}/latest`, {
+          signal: AbortSignal.timeout(20_000),
+          headers: { 'user-agent': 'nizoka-profile-verify' },
+        });
+        if (res.ok) body = await res.json();
+      } catch {}
+      if (!body && i < 2) await new Promise((r) => setTimeout(r, 1500 * (i + 1)));
+    }
+    manifests.set(pkg, body);
+  }
+  return manifests.get(pkg);
 }
 
 const relLuminance = (hex) => {
@@ -127,6 +162,38 @@ const readme = await readFile(README, 'utf8');
   for (const pkg of pkgs) {
     const r = await probe(`https://registry.npmjs.org/${pkg}/latest`);
     r.ok ? pass(`npm ${pkg}`) : fail(`npm ${pkg}`, `registry returned ${r.status}`);
+  }
+}
+
+// 4b. The Engine column: every range badge names a dependency the satellite
+//     really declares — otherwise shields draws "not found" in the table.
+{
+  const badges = [...readme.matchAll(/img\.shields\.io\/npm\/dependency-version\/([^/?]+)\/(?:(peer)\/)?([^/?]+)\?/g)];
+  if (!badges.length) fail('engine badges present', 'no npm dependency-version badge found');
+  for (const [, pkg, peer, engine] of badges) {
+    const name = `engine ${pkg} → ${peer ? 'peer ' : ''}${engine}`;
+    const m = await latest(pkg);
+    if (!m) {
+      fail(name, 'registry manifest unavailable');
+      continue;
+    }
+    const range = (peer ? m.peerDependencies : m.dependencies)?.[engine];
+    range ? pass(name, range) : fail(name, `${pkg}@${m.version} declares no ${peer ? 'peer ' : ''}${engine}`);
+  }
+}
+
+// 4c. Satellites add only the dependencies the page admits to.
+{
+  for (const [pkg, allowed] of Object.entries(ALLOWED_DEPS)) {
+    const m = await latest(pkg);
+    if (!m) {
+      fail(`deps ${pkg}`, 'registry manifest unavailable');
+      continue;
+    }
+    const extra = Object.keys(m.dependencies ?? {}).filter((d) => !allowed.includes(d));
+    extra.length
+      ? fail(`deps ${pkg}`, `${pkg}@${m.version} adds ${extra.join(', ')} — fix the README or the package`)
+      : pass(`deps ${pkg}`, Object.keys(m.dependencies ?? {}).join(', ') || 'none');
   }
 }
 
