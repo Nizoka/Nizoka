@@ -28,7 +28,21 @@ const pdf = buildDocumentPDFBytes({
 extractText(pdf)[0].text; // 'Hello, world.' — it parses, too
 ```
 
-Prefer a shell? `npx pdfnative-cli render -o out.pdf`. Driving an agent? `npx pdfnative-mcp`. Same engine behind all three.
+Prefer a shell? `npx pdfnative-cli render -o out.pdf`. ZIP or PKI instead? `npm install zipnative`, `npm install pkinative` — same doctrine, same shape.
+
+Driving an agent? All three MCP servers are listed in the [official MCP Registry](https://registry.modelcontextprotocol.io). One config gives any MCP client PDF, ZIP and PKI:
+
+```json
+{
+  "mcpServers": {
+    "pdfnative": { "command": "npx", "args": ["-y", "pdfnative-mcp"] },
+    "zipnative": { "command": "npx", "args": ["-y", "zipnative-mcp"] },
+    "pkinative": { "command": "npx", "args": ["-y", "pkinative-mcp"] }
+  }
+}
+```
+
+As written, none of them touches a file: inputs and outputs travel inline. Set `PDFNATIVE_MCP_OUTPUT_DIR` — or its zip and pki twin — and that server gets exactly one sandbox directory, nothing outside it.
 
 ## The native family
 
@@ -36,19 +50,20 @@ The engine is the library; the CLI is the trust boundary the engine refuses to b
 
 | Package | Latest | Engine | What it does |
 | --- | --- | --- | --- |
-| **[pdfnative](https://github.com/Nizoka/pdfnative)** | [![npm](https://img.shields.io/npm/v/pdfnative?style=flat-square&color=1D4ED8&label=)](https://www.npmjs.com/package/pdfnative) | — | **0 deps.** PDF engine — ISO 32000-1, PDF/A-1b→3b, PDF/X-4, PAdES B-B→B-LTA signing, 27 scripts shaped with GSUB/GPOS, no fontkit |
-| [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli) | [![npm](https://img.shields.io/npm/v/pdfnative-cli?style=flat-square&color=1D4ED8&label=)](https://www.npmjs.com/package/pdfnative-cli) | ![pdfnative range](https://img.shields.io/npm/dependency-version/pdfnative-cli/pdfnative?style=flat-square&color=64748B&label=) | 21 commands — render, sign, verify, LTV, inspect, compare, batch |
-| [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) | [![npm](https://img.shields.io/npm/v/pdfnative-mcp?style=flat-square&color=1D4ED8&label=)](https://www.npmjs.com/package/pdfnative-mcp) | ![pdfnative range](https://img.shields.io/npm/dependency-version/pdfnative-mcp/pdfnative?style=flat-square&color=64748B&label=) | 28 MCP tools, no network path by default |
-| [pdfnative-react](https://github.com/Nizoka/pdfnative-react) | [![npm](https://img.shields.io/npm/v/pdfnative-react?style=flat-square&color=1D4ED8&label=)](https://www.npmjs.com/package/pdfnative-react) | ![pdfnative peer range](https://img.shields.io/npm/dependency-version/pdfnative-react/peer/pdfnative?style=flat-square&color=64748B&label=) | JSX → PDF. No DOM, no headless browser, no SaaS round-trip |
-| **[zipnative](https://github.com/Nizoka/zipnative)** | [![npm](https://img.shields.io/npm/v/zipnative?style=flat-square&color=1D4ED8&label=)](https://www.npmjs.com/package/zipnative) | — | **0 deps.** ZIP engine — own DEFLATE/INFLATE, Zip64, random access without extracting, incremental edits without recompression |
-| [zipnative-cli](https://github.com/Nizoka/zipnative-cli) | [![npm](https://img.shields.io/npm/v/zipnative-cli?style=flat-square&color=1D4ED8&label=)](https://www.npmjs.com/package/zipnative-cli) | ![zipnative range](https://img.shields.io/npm/dependency-version/zipnative-cli/zipnative?style=flat-square&color=64748B&label=) | 15 commands — zip-slip, symlink, bomb and duplicate guards on by default |
-| [zipnative-mcp](https://github.com/Nizoka/zipnative-mcp) | [![npm](https://img.shields.io/npm/v/zipnative-mcp?style=flat-square&color=1D4ED8&label=)](https://www.npmjs.com/package/zipnative-mcp) | ![zipnative range](https://img.shields.io/npm/dependency-version/zipnative-mcp/zipnative?style=flat-square&color=64748B&label=) | 13 MCP tools, sandboxed to one directory, verified by realpath |
-| **[pkinative](https://github.com/Nizoka/pkinative)** | [![npm](https://img.shields.io/npm/v/pkinative?style=flat-square&color=1D4ED8&label=)](https://www.npmjs.com/package/pkinative) | — | **0 deps.** PKI engine — X.509 and ASN.1 DER, RFC 5280 paths with CRL/OCSP, CMS and RFC 3161 timestamps, PKCS#8/#12; every signature through Web Crypto |
-| [pkinative-cli](https://github.com/Nizoka/pkinative-cli) | [![npm](https://img.shields.io/npm/v/pkinative-cli?style=flat-square&color=1D4ED8&label=)](https://www.npmjs.com/package/pkinative-cli) | ![pkinative range](https://img.shields.io/npm/dependency-version/pkinative-cli/pkinative?style=flat-square&color=64748B&label=) | 18 commands — inspect, verify, issue, sign; every one of the engine's 294 exports, offline, `--json` for agents |
+| **[pdfnative](https://github.com/Nizoka/pdfnative)** | [![npm version](https://img.shields.io/npm/v/pdfnative?style=flat-square&color=1D4ED8&label=)](https://www.npmjs.com/package/pdfnative) | — | **0 deps.** PDF engine — ISO 32000-1, PDF/A-1b→3b, PDF/X-4, PAdES B-B→B-LTA signing, 27 scripts shaped with GSUB/GPOS, no fontkit |
+| [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli) | [![npm version](https://img.shields.io/npm/v/pdfnative-cli?style=flat-square&color=1D4ED8&label=)](https://www.npmjs.com/package/pdfnative-cli) | ![pdfnative range](https://img.shields.io/npm/dependency-version/pdfnative-cli/pdfnative?style=flat-square&color=64748B&label=) | 21 commands — render, sign, verify, LTV, inspect, compare, batch |
+| [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) | [![npm version](https://img.shields.io/npm/v/pdfnative-mcp?style=flat-square&color=1D4ED8&label=)](https://www.npmjs.com/package/pdfnative-mcp) | ![pdfnative range](https://img.shields.io/npm/dependency-version/pdfnative-mcp/pdfnative?style=flat-square&color=64748B&label=) | 28 MCP tools, no network path by default |
+| [pdfnative-react](https://github.com/Nizoka/pdfnative-react) | [![npm version](https://img.shields.io/npm/v/pdfnative-react?style=flat-square&color=1D4ED8&label=)](https://www.npmjs.com/package/pdfnative-react) | ![pdfnative peer range](https://img.shields.io/npm/dependency-version/pdfnative-react/peer/pdfnative?style=flat-square&color=64748B&label=) | JSX → PDF. No DOM, no headless browser, no SaaS round-trip |
+| **[zipnative](https://github.com/Nizoka/zipnative)** | [![npm version](https://img.shields.io/npm/v/zipnative?style=flat-square&color=1D4ED8&label=)](https://www.npmjs.com/package/zipnative) | — | **0 deps.** ZIP engine — own DEFLATE/INFLATE, Zip64, random access without extracting, incremental edits without recompression |
+| [zipnative-cli](https://github.com/Nizoka/zipnative-cli) | [![npm version](https://img.shields.io/npm/v/zipnative-cli?style=flat-square&color=1D4ED8&label=)](https://www.npmjs.com/package/zipnative-cli) | ![zipnative range](https://img.shields.io/npm/dependency-version/zipnative-cli/zipnative?style=flat-square&color=64748B&label=) | 15 commands — zip-slip, symlink, bomb and duplicate guards on by default |
+| [zipnative-mcp](https://github.com/Nizoka/zipnative-mcp) | [![npm version](https://img.shields.io/npm/v/zipnative-mcp?style=flat-square&color=1D4ED8&label=)](https://www.npmjs.com/package/zipnative-mcp) | ![zipnative range](https://img.shields.io/npm/dependency-version/zipnative-mcp/zipnative?style=flat-square&color=64748B&label=) | 13 MCP tools, sandboxed to one directory, verified by realpath |
+| **[pkinative](https://github.com/Nizoka/pkinative)** | [![npm version](https://img.shields.io/npm/v/pkinative?style=flat-square&color=1D4ED8&label=)](https://www.npmjs.com/package/pkinative) | — | **0 deps.** PKI engine — X.509 and ASN.1 DER, RFC 5280 paths with CRL/OCSP, CMS and RFC 3161 timestamps, PKCS#8/#12; every signature through Web Crypto |
+| [pkinative-cli](https://github.com/Nizoka/pkinative-cli) | [![npm version](https://img.shields.io/npm/v/pkinative-cli?style=flat-square&color=1D4ED8&label=)](https://www.npmjs.com/package/pkinative-cli) | ![pkinative range](https://img.shields.io/npm/dependency-version/pkinative-cli/pkinative?style=flat-square&color=64748B&label=) | 18 commands — inspect, verify, issue, sign; every one of the engine's 294 exports, offline, `--json` for agents |
+| [pkinative-mcp](https://github.com/Nizoka/pkinative-mcp) | [![npm version](https://img.shields.io/npm/v/pkinative-mcp?style=flat-square&color=1D4ED8&label=)](https://www.npmjs.com/package/pkinative-mcp) | ![pkinative range](https://img.shields.io/npm/dependency-version/pkinative-mcp/pkinative?style=flat-square&color=64748B&label=) | 34 MCP tools, no network code path, no key byte ever returned — every artefact re-read by OpenSSL 3 |
 
 *Engine* is the range each satellite declares on its engine, read live from npm. A caret range takes every engine minor without a satellite release, so an engine can lead its satellites — and the *Latest* column shows by how much.
 
-Engines carry zero runtime dependencies. The CLIs add none beyond their engine; the MCP servers add the MCP SDK and zod, pdfnative-react adds react-reconciler — and nothing else. For scale, measured 2026-07-28: pdfkit ships 6 runtime dependencies, pdf-lib 4, jsPDF 3, pdfmake 3.
+Engines carry zero runtime dependencies. The CLIs add none beyond their engine; the MCP servers add the MCP SDK and zod, pdfnative-react adds react-reconciler — and nothing else. For scale, measured 2026-07-28: pdfkit ships 6 runtime dependencies, pdf-lib 4, jsPDF 3, pdfmake 3. Of the TypeScript PKI libraries measured on 2026-09-19, only pkinative and micro509 ship zero — asn1js 3, pkijs 6, `@peculiar/x509` 11.
 
 One API surface. Node.js ≥ 22 and browsers run in CI; Deno, Bun and Workers follow from the architecture but are not yet a tested matrix. MIT, all of it.
 
@@ -100,14 +115,26 @@ And the line the agent must repeat before every submission, straight out of `ai-
 
 Every line below is a CI job against an outside corpus — not a badge someone drew.
 
-- **veraPDF** — PDF/A conformance across the pdfnative repos, including negative canaries the validator is required to *reject*. Blocking in three of them; still advisory in `pdfnative-mcp`.
+- **veraPDF** — PDF/A conformance across the pdfnative repos, including negative canaries the validator is required to *reject*. Blocking in all four.
 - **ISO/IEC 21320-1** — clause by clause, fail-closed, on Linux and Windows. No external ZIP validator exists — JHOVE has no ZIP module — so this one is the project's own; the corpus and its negative canaries are what make it a test rather than a claim.
 - **x509-limbo, Wycheproof + NIST PKITS** — 30 361 certificates, 1 530 ECDSA vectors, the 405 PKITS certificates and 224 signed S/MIME messages, pinned by commit and SHA-256, differentially cross-checked against OpenSSL. The 565 refusals sit in a reviewed baseline, frozen with their codes for the whole 1.x line.
-- **npm Trusted Publishing (OIDC) + SLSA provenance** — on all nine published packages. No long-lived token exists anywhere.
+- **OpenSSL 3** — every artefact pkinative-mcp writes, re-read by OpenSSL across 12 command families: a 28-entry corpus, five of them canaries OpenSSL must refuse, blocking on Linux and Windows. The other direction too — 42 fixtures OpenSSL wrote, read and verified by the tools.
+- **npm Trusted Publishing (OIDC) + SLSA provenance** — on all ten published packages. No long-lived token exists anywhere.
 
 Every engine, and every satellite but zipnative-cli and zipnative-mcp, holds the numbers its docs quote to a single source of truth — an `ecosystem.json` or its own data registries — and a `verify:docs` step breaks the build when the prose disagrees.
 
 ## Latest release
+
+**[pkinative-mcp 1.0](https://github.com/Nizoka/pkinative-mcp/releases/tag/v1.0.0)** shipped on 2026-10-17 — pkinative, addressable by an agent. 34 tools inspect and verify certificates and chains, CRLs, OCSP responses, CMS signatures and RFC 3161 timestamps; issue certificates and CSRs; open PKCS#8 and PKCS#12. Every one of the engine's 117 runtime exports is reached by a named tool, and a test proves it.
+
+There is no network code path in it — no CRL, OCSP or TSA fetch, no telemetry: the server builds the request bytes, the caller carries them, the server judges the evidence that comes back. Signing keys stay non-extractable Web Crypto handles and no tool returns a key byte. A refused certificate is a verdict — `valid: false` with pkinative's reason codes — never a crash. The tool API is frozen at `_meta.apiVersion` 1.0.0.
+
+With it the PKI line is complete: engine, CLI and MCP server, all at 1.0 within thirteen days — CLI first, then MCP, the order both elders followed. Next: pdfnative's own signature stack moving onto pkinative.
+
+<details>
+<summary>Earlier releases</summary>
+
+<br>
 
 **[pkinative-cli 1.0](https://github.com/Nizoka/pkinative-cli/releases/tag/v1.0.0)** shipped on 2026-10-08 — the engine's command line, with `pkinative` as its one runtime dependency. 18 commands reach every one of pkinative's 294 exports, and a test proves it; nothing is fetched from the network, and `--json` gives scripts and agents a stable contract: the report on stdout, one envelope on stderr, pkinative's codes verbatim.
 
@@ -117,9 +144,7 @@ It reads certificates strictly — DER by default, BER only on request — and v
 
 The 1.x promise has three legs — the export surface, the error codes, and the *decision surface*: which certificate is refused, with which code. Each is a frozen snapshot that a build rule holds, not a sentence. Stated plainly: there is no external security audit at 1.0; what stands in its place is listed in its `SECURITY.md`.
 
-Next: `pkinative-mcp`, pinning `pkinative ^1.0.0` — CLI first, then MCP, the order both elders followed — and then pdfnative's own signature stack moving onto pkinative.
-
-Of the TypeScript PKI libraries measured on 2026-09-19, only pkinative and micro509 ship zero dependencies — asn1js 3, pkijs 6, `@peculiar/x509` 11.
+</details>
 
 ---
 

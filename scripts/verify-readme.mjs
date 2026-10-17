@@ -23,7 +23,10 @@ const ASSETS = join(ROOT, 'assets');
  * is the floor, not the bar: an empty repo created to reserve the name is
  * still not linked until it ships something.
  */
-const UNPUBLISHED = ['Nizoka/pkinative-mcp'];
+const UNPUBLISHED = [];
+
+/** The engines: the packages that may declare no runtime dependency at all. */
+const ENGINES = ['pdfnative', 'zipnative', 'pkinative'];
 
 /**
  * The runtime dependencies each satellite may declare. The page says the CLIs
@@ -38,7 +41,13 @@ const ALLOWED_DEPS = {
   'zipnative-cli': ['zipnative'],
   'zipnative-mcp': ['zipnative', ...MCP],
   'pkinative-cli': ['pkinative'],
+  'pkinative-mcp': ['pkinative', ...MCP],
 };
+
+/** How the prose spells a package count — "on all ten published packages". */
+const NUMBERS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
+  'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen',
+  'eighteen', 'nineteen', 'twenty'];
 
 /**
  * Domains named in the footer as "soon". Registered and parked is not shipped:
@@ -71,6 +80,21 @@ async function probe(url, { attempts = 3 } = {}) {
     if (i < attempts - 1) await new Promise((r) => setTimeout(r, 1500 * (i + 1)));
   }
   return last;
+}
+
+/** A full registry document (every version, every publish time), or null. */
+async function packument(pkg) {
+  for (let i = 0; i < 3; i++) {
+    try {
+      const res = await fetch(`https://registry.npmjs.org/${pkg}`, {
+        signal: AbortSignal.timeout(20_000),
+        headers: { 'user-agent': 'nizoka-profile-verify' },
+      });
+      if (res.ok) return await res.json();
+    } catch {}
+    if (i < 2) await new Promise((r) => setTimeout(r, 1500 * (i + 1)));
+  }
+  return null;
 }
 
 /** A registry manifest, or null — read once per package across the checks. */
@@ -156,10 +180,10 @@ const readme = await readFile(README, 'utf8');
 }
 
 // 4. Every badge points at a package that is really on the registry.
+const tablePkgs = [...new Set([...readme.matchAll(/img\.shields\.io\/npm\/v\/([^?]+)\?/g)].map((m) => m[1]))];
 {
-  const pkgs = [...new Set([...readme.matchAll(/img\.shields\.io\/npm\/v\/([^?]+)\?/g)].map((m) => m[1]))];
-  if (!pkgs.length) fail('badges present', 'no npm version badge found');
-  for (const pkg of pkgs) {
+  if (!tablePkgs.length) fail('badges present', 'no npm version badge found');
+  for (const pkg of tablePkgs) {
     const r = await probe(`https://registry.npmjs.org/${pkg}/latest`);
     r.ok ? pass(`npm ${pkg}`) : fail(`npm ${pkg}`, `registry returned ${r.status}`);
   }
@@ -194,6 +218,72 @@ const readme = await readFile(README, 'utf8');
     extra.length
       ? fail(`deps ${pkg}`, `${pkg}@${m.version} adds ${extra.join(', ')} — fix the README or the package`)
       : pass(`deps ${pkg}`, Object.keys(m.dependencies ?? {}).join(', ') || 'none');
+  }
+}
+
+// 4d. The table and the rules above describe the same packages: a row added
+//     without its dependency rule — or a rule left behind by a removed row —
+//     fails here rather than going quietly unchecked.
+{
+  const ruled = [...ENGINES, ...Object.keys(ALLOWED_DEPS)];
+  const unruled = tablePkgs.filter((p) => !ruled.includes(p));
+  const orphaned = ruled.filter((p) => !tablePkgs.includes(p));
+  unruled.length
+    ? fail('every row has a rule', `${unruled.join(', ')} — add it to ENGINES or ALLOWED_DEPS`)
+    : pass('every row has a rule', `${tablePkgs.length} packages`);
+  orphaned.length
+    ? fail('every rule has a row', `${orphaned.join(', ')} — no npm badge in the table`)
+    : pass('every rule has a row');
+}
+
+// 4e. The package count in the prose is the number of rows in the table.
+{
+  const m = readme.match(/on all (\w+) published packages/);
+  if (!m) fail('package count', 'no "on all <n> published packages" sentence');
+  else if (NUMBERS.indexOf(m[1]) === tablePkgs.length) pass('package count', `${m[1]} = ${tablePkgs.length} rows`);
+  else fail('package count', `prose says "${m[1]}", the table has ${tablePkgs.length} rows`);
+}
+
+// 4f. The agent config names only servers that are really MCP servers: in the
+//     table, and published with an `mcpName` the MCP Registry knows them by.
+{
+  const fence = readme.match(/```json\n([\s\S]*?)```/)?.[1];
+  let servers = null;
+  try {
+    servers = JSON.parse(fence ?? '').mcpServers;
+  } catch {}
+  if (!servers) fail('MCP config', 'no ```json fence with an mcpServers object');
+  for (const [key, { args = [] } = {}] of Object.entries(servers ?? {})) {
+    const pkg = args.find((a) => !a.startsWith('-'));
+    const name = `MCP config ${key} → ${pkg}`;
+    if (!tablePkgs.includes(pkg)) {
+      fail(name, `${pkg} has no row in the table`);
+      continue;
+    }
+    const m = await latest(pkg);
+    m?.mcpName ? pass(name, m.mcpName) : fail(name, `${pkg}@${m?.version} declares no mcpName`);
+  }
+}
+
+// 4g. "Latest release" names the newest major. Notice only, never a failure —
+//     the section is an editorial choice, but a newer x.0.0 should be seen.
+{
+  const cited = readme.match(/## Latest release\s+\*\*\[([a-z-]+) (\d+)\.(\d+)\]/);
+  if (!cited) fail('latest release', 'no "**[<package> <major>.<minor>]" under ## Latest release');
+  else if (!tablePkgs.includes(cited[1])) fail('latest release', `${cited[1]} has no row in the table`);
+  else {
+    const [, citedPkg, major, minor] = cited;
+    const docs = await Promise.all(tablePkgs.map(packument));
+    const citedTime = docs[tablePkgs.indexOf(citedPkg)]?.time?.[`${major}.${minor}.0`];
+    const newer = tablePkgs
+      .map((pkg, i) => {
+        const times = docs[i]?.time ?? {};
+        const v = Object.keys(times).filter((k) => /^[1-9]\d*\.0\.0$/.test(k)).sort((a, b) => times[b].localeCompare(times[a]))[0];
+        return v && citedTime && times[v] > citedTime ? `${pkg} ${v} (${times[v].slice(0, 10)})` : null;
+      })
+      .filter(Boolean);
+    if (!citedTime) fail('latest release', `${citedPkg} ${major}.${minor}.0 is not on the registry`);
+    else pass('latest release', newer.length ? `newer than ${citedPkg} ${major}.${minor}: ${newer.join(', ')} — consider updating` : `${citedPkg} ${major}.${minor} is the newest major`);
   }
 }
 
